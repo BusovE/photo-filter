@@ -59,16 +59,22 @@ btnReset.addEventListener('click', resetFilters);
 
 // next Picture
 function nextImage() {
-  const hour = new Date().getHours;
   const btnNextImage = document.querySelector('.btn-next');
-  let url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/';
+  const btnPrevImage = document.querySelector('.btn-prev');
+  const hour = new Date().getHours();
+  let url;
 
   function getUrlOfHour() {
+    console.log(hour);
     if (hour >= 6 && hour < 12) {
-      url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/morning/';
-    } else if (hour >= 12 && hour < 18) url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/day/';
-    else if (hour >= 18 && hour < 24) url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/evening/';
-    else url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/night/';
+      return url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/morning/';
+    } else if (hour >= 12 && hour < 18) {
+      return url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/day/';
+    } else if (hour >= 18 && hour < 24) {
+      return url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/evening/';
+    } else {
+      return url = 'https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/night/';
+    }
   }
 
   const imagesList = ['01.jpg', '02.jpg', '03.jpg', '04.jpg', '05.jpg', '06.jpg', '07.jpg', '08.jpg', '09.jpg', '10.jpg', '11.jpg', '12.jpg', '13.jpg', '14.jpg', '15.jpg', '16.jpg', '17.jpg', '18.jpg', '19.jpg', '20.jpg'];
@@ -86,6 +92,24 @@ function nextImage() {
     }, 300);
   }
   btnNextImage.addEventListener('click', getImageFromUrl);
+
+  function getPrevImage() {
+    getUrlOfHour();
+    if (i === 0) {
+      i = imagesList.length - 1;
+    } else {
+      i--;
+    }
+    const index = i % imagesList.length;
+    const imageUrl = url + imagesList[index];
+    image.src = imageUrl;
+    btnPrevImage.disabled = true;
+    setTimeout(() => {
+      btnPrevImage.disabled = false;
+    }, 300);
+  }
+  btnPrevImage.addEventListener('click', getPrevImage);
+
 }
 
 nextImage();
@@ -101,6 +125,7 @@ function loadImage() {
     };
 
     reader.readAsDataURL(file);
+    fileLoad.value = null;
     console.log(fileLoad.value);
   });
 }
@@ -112,57 +137,39 @@ function downloadImage() {
 
   const canvas = document.querySelector('canvas');
   const btnSaveImage = document.querySelector('.btn-save');
-
-  function getFilter() {
-    let filters = '';
-    let imageFilters = image.style.cssText;
-
-    for (let i = 0; i < imageFilters.length; i++) {
-      if (imageFilters[i] === '-' && imageFilters[i - 1] !== 'e') {
-        continue;
-      } else {
-        switch (imageFilters[i]) {
-          case ":":
-            filters = filters + '(';
-            break;
-          case ";":
-            filters = filters + ')';
-            break;
-          default:
-            filters = filters + imageFilters[i];
-            break;
-        }
-      }
-    }
-    return filters;
-  }
+  const canv = canvas.getContext('2d');
 
   function createCanvas(img) {
-    const canv = canvas.getContext('2d');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    canv.filter = getFilter();
+    let filters = '';
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    inputs.forEach(input => {
+      if (input.name === 'blur') {
+        const sizeBlur = (input.value * ((img.width / image.width + img.height / image.height) / 2)).toFixed(2);
+        filters += `${input.name}(${sizeBlur}${input.dataset.sizing})`;
+      } else {
+        filters += `${input.name}(${input.value}${input.dataset.sizing})`;
+      }
+    });
+    canv.filter = filters.trim();
     canv.drawImage(img, 0, 0);
   }
 
+
   function saveImage() {
     btnSaveImage.addEventListener('click', () => {
-      const request = new Promise((resolve, reject) => {
-        const img = new Image();
-        img.setAttribute('crossOrigin', 'anonymous');
-        img.src = image.src;
-        img.onload = () => {
-          createCanvas(img);
-          resolve();
-        };
-      });
-      request.then(function createLink() {
+      const img = new Image();
+      img.setAttribute('crossOrigin', 'anonymous');
+      img.src = image.src;
+      img.onload = () => {
+        createCanvas(img);
         let link = document.createElement('a');
-        link.download = 'savedImdage.png';
-        link.href = canvas.toDataURL();
+        link.download = 'savedImage.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
         link.delete;
-      });
+      };
     });
   }
   saveImage();
